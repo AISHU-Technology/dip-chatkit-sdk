@@ -23,6 +23,12 @@ export interface ChatKitBaseProps {
 
   /** 关闭组件的回调函数 */
   onClose?: () => void;
+
+  /** 调用接口时携带的令牌，放置到请求头：Authorization:Bearer {token} */
+  token?: string;
+
+  /** 刷新 token 的方法，由集成方传入 */
+  refreshToken?: () => Promise<string>;
 }
 
 /**
@@ -71,8 +77,22 @@ export abstract class ChatKitBase<P extends ChatKitBaseProps = ChatKitBaseProps>
   private isInitializing = false;
   private hasInitialized = false;
 
+  /**
+   * 调用接口时携带的令牌
+   */
+  protected token: string;
+
+  /**
+   * 刷新 token 的方法，由集成方传入
+   */
+  protected refreshToken?: () => Promise<string>;
+
   constructor(props: P) {
     super(props);
+
+    // 初始化 token 和 refreshToken
+    this.token = props.token || '';
+    this.refreshToken = props.refreshToken;
 
     this.state = {
       conversationID: props.conversationID || '',
@@ -184,6 +204,17 @@ export abstract class ChatKitBase<P extends ChatKitBaseProps = ChatKitBaseProps>
    * @returns 返回解析并积累起来后的 buffer
    */
   public abstract reduceEventStreamMessage(eventMessage: EventStreamMessage, prevBuffer: string): string;
+
+  /**
+   * 检查是否需要刷新 token (抽象方法，由子类实现)
+   * 当发生异常时检查是否需要刷新 token。返回 true 表示需要刷新 token，返回 false 表示无需刷新 token。
+   * 该方法需要由子类继承并重写，以适配扣子、Dify 等 LLMOps 平台的接口。
+   * 注意：该方法是一个无状态无副作用的函数，不允许修改 state。
+   * @param status HTTP 状态码
+   * @param error 错误响应体
+   * @returns 返回是否需要刷新 token
+   */
+  public abstract shouldRefreshToken(status: number, error: any): boolean;
 
   /**
    * 向 ChatKit 注入应用上下文
@@ -408,6 +439,63 @@ export abstract class ChatKitBase<P extends ChatKitBaseProps = ChatKitBaseProps>
     }
 
     return buffer;
+  }
+
+  /**
+   * 执行 API 调用，并在需要时自动刷新 token 并重试一次
+   * @param apiCall API 调用函数
+   * @returns API 调用结果
+   */
+  protected async executeWithTokenRefresh<T>(
+    apiCall: () => Promise<T>
+  ): Promise<T> {
+    try {
+      // 第一次尝试
+      return await apiCall();
+    } catch (error: any) {
+      const status = error.status || error.response?.status || 0;
+      const errorBody = error.body || error.response?.data || error;
+
+      // 检查是否需要刷新 token
+      const needsRefresh = this.shouldRefreshToken(status, errorBody);
+
+      if (needsRefresh && this.refreshToken) {
+        console.log('检测到 token 失效，正在刷新 token...');
+
+        try {
+          // 调用 refreshToken 方法获取新 token
+          const newToken = await this.refreshToken();
+
+          // 更新 token 属性
+          this.token = newToken;
+
+          console.log('Token 刷新成功，正在重试请求...');
+
+          // 重试 API 调用
+          try {
+            return await apiCall();
+          } catch (retryError: any) {
+            // 重试后仍然失败，检查是否还是 token 问题
+            const retryStatus = retryError.status || retryError.response?.status || 0;
+            const retryErrorBody = retryError.body || retryError.response?.data || retryError;
+
+            if (this.shouldRefreshToken(retryStatus, retryErrorBody)) {
+              console.error('重试后仍然提示 token 失效，放弃重试');
+            }
+
+            // 抛出重试后的错误
+            throw retryError;
+          }
+        } catch (refreshError) {
+          console.error('刷新 token 失败:', refreshError);
+          // 刷新失败，抛出原始错误
+          throw error;
+        }
+      }
+
+      // 不需要刷新 token，直接抛出错误
+      throw error;
+    }
   }
 
   /**

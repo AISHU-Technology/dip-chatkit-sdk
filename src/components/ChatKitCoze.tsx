@@ -312,6 +312,18 @@ export class ChatKitCoze extends ChatKitBase<ChatKitCozeProps> {
       return prevBuffer;
     }
   }
+
+  /**
+   * 检查是否需要刷新 token
+   * Coze 平台返回 401 状态码时表示 token 失效
+   * @param status HTTP 状态码
+   * @param error 错误响应体
+   * @returns 返回是否需要刷新 token
+   */
+  public shouldRefreshToken(status: number, error: any): boolean {
+    // 401 Unauthorized 表示 token 失效
+    return status === 401;
+  }
 }
 
 export default ChatKitCoze;

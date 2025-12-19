@@ -13,6 +13,17 @@ export const ChatKitDataAgentDemo: React.FC = () => {
   const chatOffsetClass = showChat ? 'md:pr-[500px]' : '';
 
   /**
+   * 模拟刷新 token 的方法
+   * 实际项目中应该调用真实的 token 刷新接口
+   */
+  const refreshToken = async (): Promise<string> => {
+    console.log('正在刷新 token...');
+    // TODO: 在实际项目中，这里应该调用真实的 token 刷新接口
+    // 这里仅作演示，返回原 token
+    return 'ory_at_SL8UpKSQ6hcQhVylz_Zl6TaUY4hLXJXkzWiKddCJ6rQ.UFX6wqEPTJHGDar_xo1HFKQiH6l-y3apGHbSP50Go0o'
+  };
+
+  /**
    * 注入上下文示例
    */
   const injectExampleContext = () => {
@@ -96,7 +107,8 @@ export const ChatKitDataAgentDemo: React.FC = () => {
             onClose={() => setShowChat(false)}
             baseUrl={DATA_AGENT_CONFIG.baseUrl}
             agentId={DATA_AGENT_CONFIG.agentId}
-            bearerToken={DATA_AGENT_CONFIG.bearerToken}
+            token={DATA_AGENT_CONFIG.token}
+            refreshToken={refreshToken}
             businessDomain={DATA_AGENT_CONFIG.businessDomain}
           />
         </div>

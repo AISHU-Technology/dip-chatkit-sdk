@@ -15,8 +15,8 @@ export interface ChatKitDataAgentProps extends ChatKitBaseProps {
   /** AISHU Data Agent 的 Agent ID,用作路径参数 */
   agentId: string;
 
-  /** 访问令牌,需要包含 Bearer 前缀 */
-  bearerToken: string;
+  /** 访问令牌,需要包含 Bearer 前缀 (已废弃，请使用 token 属性) */
+  bearerToken?: string;
 
   /** 服务端基础地址,应包含 /api/agent-app/v1 前缀 */
   baseUrl?: string;
@@ -40,9 +40,6 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
   /** Agent ID */
   private agentId: string;
 
-  /** Bearer Token */
-  private bearerToken: string;
-
   /** 是否开启增量流式返回 */
   private incStream: boolean;
 
@@ -54,9 +51,14 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
 
     this.baseUrl = props.baseUrl || 'https://dip.aishu.cn/api/agent-app/v1';
     this.agentId = props.agentId;
-    this.bearerToken = props.bearerToken;
     this.incStream = props.enableIncrementalStream ?? true;
     this.businessDomain = props.businessDomain || 'bd_public';
+
+    // 向后兼容：如果传入了 bearerToken 但没有 token，从 bearerToken 中提取 token
+    if (props.bearerToken && !props.token) {
+      // bearerToken 包含 "Bearer " 前缀，需要移除
+      this.token = props.bearerToken.replace(/^Bearer\s+/i, '');
+    }
   }
 
   /**
@@ -85,21 +87,27 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
 
       console.log('调用 agent-factory API:', agentFactoryUrl);
 
-      const response = await fetch(agentFactoryUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': this.bearerToken,
-          'Content-Type': 'application/json',
-          'x-business-domain': this.businessDomain,
-        },
+      // 使用 executeWithTokenRefresh 包装 API 调用，支持 token 刷新和重试
+      const result = await this.executeWithTokenRefresh(async () => {
+        const response = await fetch(agentFactoryUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+            'x-business-domain': this.businessDomain,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          const error: any = new Error(`获取 Data Agent 配置失败: ${response.status} - ${errorText}`);
+          error.status = response.status;
+          error.body = errorText;
+          throw error;
+        }
+
+        return await response.json();
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`获取 Data Agent 配置失败: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
 
       // 从响应中提取开场白和预置问题
       // 根据 agent-factory API 文档,响应格式为: { id, name, config: {...}, ... }
@@ -150,24 +158,30 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
         agent_version: 'latest',
       };
 
-      const response = await fetch(
-        `${this.baseUrl}/app/${this.agentId}/conversation`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: this.bearerToken,
-          },
-          body: JSON.stringify(requestBody),
+      // 使用 executeWithTokenRefresh 包装 API 调用，支持 token 刷新和重试
+      const result = await this.executeWithTokenRefresh(async () => {
+        const response = await fetch(
+          `${this.baseUrl}/app/${this.agentId}/conversation`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${this.token}`,
+            },
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          const error: any = new Error(`创建 Data Agent 会话失败: ${response.status} - ${errorText}`);
+          error.status = response.status;
+          error.body = errorText;
+          throw error;
         }
-      );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`创建 Data Agent 会话失败: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
+        return await response.json();
+      });
       // 从响应中获取会话 ID
       // 根据 ConversationResponse Schema，响应格式为 { id: string, ttl: string }
       const conversationId = result.data?.id || result.id || '';
@@ -210,23 +224,31 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
       conversation_id: conversationID || undefined,
     };
 
-    const response = await fetch(
-      `${this.baseUrl}/app/${this.agentId}/chat/completion`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-          Authorization: this.bearerToken,
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    // 使用 executeWithTokenRefresh 包装 API 调用，支持 token 刷新和重试
+    const response = await this.executeWithTokenRefresh(async () => {
+      const res = await fetch(
+        `${this.baseUrl}/app/${this.agentId}/chat/completion`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+            Authorization: `Bearer ${this.token}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Data Agent API 调用失败: ${response.status} ${errText}`);
-    }
+      if (!res.ok) {
+        const errText = await res.text();
+        const error: any = new Error(`Data Agent API 调用失败: ${res.status} ${errText}`);
+        error.status = res.status;
+        error.body = errText;
+        throw error;
+      }
+
+      return res;
+    });
 
     const assistantMessageId = `assistant-${Date.now()}`;
     const initialAssistantMessage: ChatMessage = {
@@ -372,6 +394,18 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
     }
 
     return '';
+  }
+
+  /**
+   * 检查是否需要刷新 token
+   * AISHU Data Agent 平台返回 401 状态码时表示 token 失效
+   * @param status HTTP 状态码
+   * @param error 错误响应体
+   * @returns 返回是否需要刷新 token
+   */
+  public shouldRefreshToken(status: number, error: any): boolean {
+    // 401 Unauthorized 表示 token 失效
+    return status === 401;
   }
 }
 

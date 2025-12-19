@@ -6,9 +6,8 @@ export const DATA_AGENT_CONFIG = {
   baseUrl: '/data-agent',
   /** Agent ID */
   agentId: '01KAZKS30H0X0D8Z8K25VKSJ98',
-  /** Bearer Token,请确认包含 Bearer 前缀 */
-  bearerToken:
-    'Bearer ory_at_OFWoNBLS70BmOZoclwslxAKPZl2enQ45f-jPrMAh3r8.kYSifkaVIo8ttSZTiaaRCE7vulSht-uoWuq-ZykRT7o',
+  /** Token (不带 Bearer 前缀) */
+  token: 'ry_at_SL8UpKSQ6hcQhVylz_Zl6TaUY4hLXJXkzWiKddCJ6rQ.UFX6wqEPTJHGDar_xo1HFKQiH6l-y3apGHbSP50Go0o',
   /** 业务域 */
   businessDomain: 'bd_public'
 };
