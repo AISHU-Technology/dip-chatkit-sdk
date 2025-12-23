@@ -21,8 +21,11 @@ export interface ChatKitDataAgentProps extends ChatKitBaseProps {
   /** 服务端基础地址,应包含 /api/agent-app/v1 前缀 */
   baseUrl?: string;
 
-  /** 是否开启增量流式返回,默认 true */
-  enableIncrementalStream?: boolean;
+  /** agent 版本，"v0"表示最新版本，默认 "v0" */
+  agentVersion?: string;
+
+  /** 智能体执行引擎版本，最新为"v2"，默认 "v2" */
+  executorVersion?: string;
 
   /** 智能体所属的业务域,用于 agent-factory API */
   businessDomain?: string;
@@ -40,8 +43,11 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
   /** Agent ID */
   private agentId: string;
 
-  /** 是否开启增量流式返回 */
-  private incStream: boolean;
+  /** agent 版本 */
+  private agentVersion: string;
+
+  /** 智能体执行引擎版本 */
+  private executorVersion: string;
 
   /** 业务域 */
   private businessDomain: string;
@@ -51,7 +57,8 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
 
     this.baseUrl = props.baseUrl || 'https://dip.aishu.cn/api/agent-app/v1';
     this.agentId = props.agentId;
-    this.incStream = props.enableIncrementalStream ?? true;
+    this.agentVersion = props.agentVersion || 'v0';
+    this.executorVersion = props.executorVersion || 'v2';
     this.businessDomain = props.businessDomain || 'bd_public';
 
     // 向后兼容：如果传入了 bearerToken 但没有 token，从 bearerToken 中提取 token
@@ -217,9 +224,10 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
     // 构造请求体，使用传入的 conversationID 参数
     const body = {
       agent_id: this.agentId,
+      agent_version: this.agentVersion,
+      executor_version: this.executorVersion,
       query: fullQuery,
       stream: true,
-      inc_stream: this.incStream,
       custom_querys: ctx?.data,
       conversation_id: conversationID || undefined,
     };
