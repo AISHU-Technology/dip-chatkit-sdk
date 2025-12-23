@@ -9,13 +9,14 @@ components:
           description: agent ID。
         agent_version:
           type: string
-          description: agent 版本，不传则默认使用最新发布版本。
+          description: agent 版本，“v0“表示最新版本
         executor_version:
           type: string
-          description: 智能体执行服务 ID。
+          description: 智能体执行引擎版本，最新为“v2“
       required:
         - agent_id
         - agent_version
+
     ChatCompletionRequest:
       type: object
       description: 对话请求体。
@@ -25,16 +26,18 @@ components:
           description: agent ID。
         agent_version:
           type: string
-          description: agent 版本，不传则默认使用最新发布版本。
+          description: agent 版本，“v0“表示最新版本
+          enum: [v0]
+        executor_version:
+          type: string
+          description: 智能体执行引擎版本，最新为“v2“
+          enum: [v2]
         conversation_id:
           type: string
           description: 会话 ID。
         custom_querys:
           type: object
-          description: 自定义输入变量，map[string]any。
-        inc_stream:
-          type: boolean
-          description: 是否增量流式返回。
+          description: 传给智能体的额外参数
         query:
           type: string
           description: 用户输入的问题。
@@ -44,248 +47,229 @@ components:
       required:
         - query
         - agent_id
+        - agent_version
+        - executor_version
         - conversation_id
         - stream
-    ConversationResponse:
-      description: 会话创建响应。
+
+    EventMessage:
       type: object
+      desciption: Event Stream Message
       properties:
-        id:
-          description: 新会话 ID。
-          type: string
-        ttl:
-          description: 会话过期时间，单位秒。
-          type: string
-    AgentInfo:
-      type: object
-      properties:
-        agent_id:
-          description: Agent ID。
-          type: string
-        agent_name:
-          description: Agent 名称。
-          type: string
-        agent_status:
-          description: Agent 状态。
-          type: string
-        agent_version:
-          description: Agent 版本。
-          type: string
-    Answer:
-      type: object
-      properties:
-        ask:
-          nullable: true
-          type: object
-        cites:
-          nullable: true
-          type: object
-        text:
-          type: string
-    Arg:
-      type: object
-      properties:
-        name:
-          description: 参数名称。
-          type: string
-        type:
-          description: 参数类型。
-          type: string
-        value:
-          description: 参数值。
-          type: string
-    ChatResponse:
-      type: object
-      properties:
-        assistant_message_id:
-          description: 助手消息 ID。
-          type: string
-        conversation_id:
-          description: 会话 ID。
-          type: string
-        message:
-          $ref: '#/components/schemas/Message'
-        status:
-          description: 状态。
-          type: string
-        user_message_id:
-          description: 用户消息 ID。
-          type: string
-    Content:
-      type: object
-      properties:
-        final_answer:
-          $ref: '#/components/schemas/FinalAnswer'
-        middle_answer:
-          items:
-            $ref: '#/components/schemas/MiddleAnswer'
+        seq_id:
+          type: integer
+          description: Event Message 序号
+        key:
           type: array
-        temp_files:
           items:
-            $ref: '#/components/schemas/TempFile'
-          type: array
-        text:
+            oneOf:
+            - type: string
+            - type: integer
+          description: 要操作的对象的属性路径。数字表示数组下标，字符串表示对象属性名
+        action:
           type: string
+          enum: [append, upsert]
+          description: |
+            对象属性的操作类型：
+              - append：向数组追加元素或在文本后追加内容
+              - upsert：插入对象属性
+        content:
+          type: 
+            oneOf:
+            - type: string
+            - type: integer
+            - $ref: "#/components/schemas/Message"
+            - $ref: "#/components/schemas/Progress"
+            - $ref: "#/components/schemas/LLMAnswer"
+            - $ref: "#/components/schemas/ToolAnswer"
+          description: 表示要 upsert 或 append 的内容
+    
+    Message:
+      index:
+        type: int
+        description: 消息下标，用于前端消息排序
+      id:
+        type: string
+        description: 消息 ID
+      conversation_id:
+        type: string
+        description: 会话 ID
+      role:
+        type: string
+        enum: [user, assistant]
+      content:
+        type: object
+        properties: 
+          final_answer:
+            $ref: "#/components/schemas/FinalAnswer"
+          middle_answer:
+            $ref: "#/components/schemas/MiddleAnswer"
+  
     FinalAnswer:
       type: object
-      description: 最终结果。
+      description: 智能体最终的输出
       properties:
-        answer:
-          $ref: '#/components/schemas/Answer'
-        query:
-          type: string
-        skill_process:
-          items:
-            $ref: '#/components/schemas/SkillsProcessItem'
-          type: array
-        temp_files:
-          items:
-            $ref: '#/components/schemas/TempFile'
-          type: array
         thinking:
           type: string
-    Message:
-      type: object
-      properties:
-        agent_info:
-          $ref: '#/components/schemas/AgentInfo'
-        content:
-          $ref: '#/components/schemas/Content'
-        content_type:
-          description: 内容类型。
-          type: string
-        conversation_id:
-          description: 会话 ID。
-          type: string
-        id:
-          description: 消息 ID。
-          type: string
-        index:
-          description: 消息下标,用于标记消息在整个会话中的位置、顺序，比如基于 index 正序在前端按照时间线展示对话消息。
-          type: integer
-        reply_id:
-          description: '回复ID,用于关联问答消息'
-          type: string
-        role:
-          description: '角色 user, assistant'
-          type: string
-        status:
-          description: 消息状态。
-          type: string
+        answer:
+          type: object
+          properties:
+            text:
+              type: string
+              description: 智能体最终输出的文本内容
+      
     MiddleAnswer:
       type: object
+      description: 智能体执行过程中的输出
       properties:
-        doc_retrieval:
-          description: 文档召回结果。
-          type: object
-        graph_retrieval:
-          description: 图谱召回结果。
-          type: object
-        middle_output_vars:
-          description: 中间结果。
-          items:
-            type: object
-          type: array
         progress:
-          description: dolphin执行过程。
-          items:
-            $ref: '#/components/schemas/Progress'
           type: array
+          items:
+            $ref: "#/components/schemas/Progress"
+    
     Progress:
       type: object
+      description: 智能体执行过程中的一个步骤
       properties:
-        agent_name:
-          description: 兼容旧版本字段，代理名称，对于LLM输出通常为"main"，对于工具调用为工具名称。
-          type: string
-        answer:
-          description: 该阶段产生的答案或输出。
-          type: string
-        block_answer:
-          description: 块级别的答案输出。
-          type: string
-        input_message:
-          description: 输入消息，可能是字符串或消息对象数组。
-          type: object
-        interrupted:
-          description: 是否被中断。
-          type: boolean
-        skill_info:
-          $ref: '#/components/schemas/SkillInfo'
         stage:
-          description: 执行阶段类型。
-          enum:
-            - llm (LLM输出)
-            - skill (技能/工具调用)
-            - assign (赋值操作)
           type: string
-        status:
-          description: 执行状态。
-          enum:
-            - processing (进行中)
-            - completed (已完成)
-            - failed (失败)
-          type: string
+          description: |
+            步骤的类型：
+              - llm：表示大模型输出
+              - skill：表示技能调用
+          enum: [llm, skill]
+        answer:
+          oneOf:
+          - $ref: "#/components/schemas/LLMAnswer"
+          - $ref: "#/components/schemas/ToolAnswer"
         think:
-          description: 思考过程记录。
           type: string
-    RelatedQuestion:
+          description: 执行步骤中的思考过程
+        status:
+          type: string
+          description: 步骤的执行状态
+          enum: [processing, completed]
+        skill_info:
+          $ref: "#/components/schemas/SkillInfo"
+  
+    LLMAnswer:
+      type: string
+      description: 当 stage 为 “llm” 时表示大模型输出的文本
+      
+    ToolAnswer:
       type: object
-      description: 相关查询。
+      description: 当 stage 为 “skill” 时表示调用技能的输入输出
       properties:
-        query:
+        choices: array
+        description: 调用工具。返回多个表示调用了多次工具
+        items:
+          type: object
+          properties:
+            message:
+              type: object
+              description: 技能消息
+              properties:
+                role:
+                  type: string
+                  enum: [tool]
+                tool_calls:
+                  type: array
+                  description: 单次工具调用的输入输出
+                  prefixItems:
+                  - oneOf:
+                    - $ref: "#/components/schemas/ToolCall"
+                  items:
+                    oneOf:
+                    - $ref: "#/components/schemas/ToolResult"
+    
+    ToolCall:
+      type: object
+      description: 调用工具的输入
+      oneOf:
+      - "#/components/schemas/SearchIntent"
+    
+    ToolResult:
+      type: object
+      description: 调用工具的输出结果
+      oneOf:
+      - "#/components/schemas/SearchResult"
+    
+    SearchIntent:
+      type: object
+      description: 智谱搜索工具的输入查询
+      properties:
+        type:
           type: string
+          enum: [search_intent]
+        search_intent:
+          type: object
+          description: 搜索参数
+          properties:
+            keywords:
+              type: string
+            query:
+              type: string
+            intent:
+              type: string
+              enum: [SEARCH_ALL]
+    
+    SearchResult:
+      type: object
+      description: 智谱搜索工具的返回结果
+      properties:
+        type: 
+          type: string
+          enum: [search_result]
+        search_result:
+          type: array
+          items:
+            type: object
+            properties:
+              icon:
+                type: string
+                description: 搜索结果的来源网站图标 URL
+              link:
+                type: string
+                description: 搜索结果的来源地址
+              media:
+                type: string
+                description: 搜索结果的来源网站名称
+              title:
+                type: string
+                description: 搜索结果的来源文章标题
+              content:
+                type: string
+                description: 搜索结果的来源内容摘要
+    
     SkillInfo:
       type: object
+      desciption: 调用技能的技能详情
       properties:
+        type:
+          type: string
+          description: |
+            技能类型：
+            - TOOL：工具
+            - MCP：MCP 协议
+            - AGENT：调用其他智能体
+          enum: [TOOL, MCP, AGENT]
+        name:
+          type: string
+          desciption: 技能名称
         args:
-          items:
-            $ref: '#/components/schemas/Arg'
           type: array
-        checked:
-          description: 参数是否已验证。
-          type: boolean
-        name:
-          description: 技能/工具名称。
-          type: string
-        type:
-          description: 技能类型。
-          enum:
-            - TOOL
-            - AGENT
-            - MCP
-          type: string
-    SkillsProcessItem:
-      description: 技能处理结果。
-      type: object
-      properties:
-        agent_name:
-          type: string
-        cites:
-          nullable: true
-          type: object
-        input_message:
-          nullable: true
-          type: object
-        interrupted:
-          type: boolean
-        related_queries:
+          desciption: 技能参数
           items:
-            $ref: '#/components/schemas/RelatedQuestion'
-          type: array
-        status:
-          type: string
-        text:
-          type: string
-        thinking:
-          type: string
-        type:
-          type: string
-    TempFile:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        type:
-          type: string
+            type: object
+            properties:
+              name:
+                type: string
+                desciption: 参数名
+              type:
+                type: string
+                desciption: 参数类型
+                enum: [str]
+              value:
+                desciption: 参数值
+                type: string
+      

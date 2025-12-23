@@ -58,14 +58,10 @@ paths:
           application/json:
             schema:
               $ref: ./agent-app.schemas.yaml#/components/schemas/ChatCompletionRequest
-            example:
-              agent_id: 01KAZKS30H0X0D8Z8K24FMRJK6
-              query: 集群节点故障该如何处理
-              stream: true
       responses:
         "200":
           description: 成功
           content:
-            application/json:
-              schema:
-                $ref: ./agent-app.schemas.yaml#/components/schemas/ChatResponse
+            text/event-stream:
+              itemSchema:
+                $ref: ./agent-app.schemas.yaml#/components/schemas/EventMessage
