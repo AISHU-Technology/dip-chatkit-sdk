@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ChatKitDataAgent } from '../../src/components/ChatKitDataAgent';
-import { ApplicationContext } from '../../src/types';
+import { ChatKitDataAgent, ApplicationContext } from 'chatkit';
 import { DATA_AGENT_CONFIG } from './config';
 
 /**

@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // 在开发模式下,将 chatkit 指向本地构建的 dist 目录
+      'chatkit': path.resolve(__dirname, './dist/chatkit.es.js'),
     },
   },
   server: {

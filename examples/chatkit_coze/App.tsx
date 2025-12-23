@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ChatKitCoze } from '../../src/components/ChatKitCoze';
-import { ApplicationContext } from '../../src/types';
+import { ChatKitCoze, ApplicationContext } from 'chatkit';
 import { COZE_CONFIG } from './config';
 
 /**

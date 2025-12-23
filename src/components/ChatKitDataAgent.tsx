@@ -403,7 +403,7 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
    * @param error 错误响应体
    * @returns 返回是否需要刷新 token
    */
-  public shouldRefreshToken(status: number, error: any): boolean {
+  public shouldRefreshToken(status: number, _error: any): boolean {
     // 401 Unauthorized 表示 token 失效
     return status === 401;
   }

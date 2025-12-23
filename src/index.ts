@@ -4,6 +4,9 @@
  * @module chatkit
  */
 
+// 导入样式文件
+import './styles/index.css';
+
 export { ChatKitBase } from './components/ChatKitBase';
 export type { ChatKitBaseProps, ChatKitBaseState } from './components/ChatKitBase';
 

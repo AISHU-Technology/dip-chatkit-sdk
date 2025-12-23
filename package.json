@@ -3,11 +3,25 @@
   "version": "0.1.0",
   "type": "module",
   "description": "AI 对话组件 - ChatKit",
-  "main": "dist/index.js",
+  "main": "dist/chatkit.cjs.js",
+  "module": "dist/chatkit.es.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/chatkit.es.js",
+      "require": "./dist/chatkit.cjs.js"
+    },
+    "./style.css": "./dist/chatkit.css"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run build:lib && npm run build:types",
+    "build:lib": "vite build --config vite.config.lib.ts",
+    "build:types": "tsc --project tsconfig.lib.json",
     "preview": "vite preview"
   },
   "keywords": [
