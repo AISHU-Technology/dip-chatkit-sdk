@@ -5,9 +5,9 @@ export const DATA_AGENT_CONFIG = {
   /** 服务端基础地址,需包含 /api/agent-app/v1 前缀; 开发环境使用 Vite 代理的本地前缀可避免 CORS */
   baseUrl: '/data-agent',
   /** Agent ID */
-  agentId: '01KAZKS30H0X0D8Z8K25VKSJ98',
+  agentId: '01K58SCQV89130PEP6MBZT93GX',
   /** Token (不带 Bearer 前缀) */
-  token: 'ry_at_SL8UpKSQ6hcQhVylz_Zl6TaUY4hLXJXkzWiKddCJ6rQ.UFX6wqEPTJHGDar_xo1HFKQiH6l-y3apGHbSP50Go0o',
+  token: 'ory_at_TVTTSVgh5COEXj0SrEJbUwTkGBnMT0ZaOEee5cCcEuI.4JmkYwUN5w6OFnhxhvC6EOBYgNmDLqKXR3R8-y9EekI',
   /** 业务域 */
   businessDomain: 'bd_public'
 };

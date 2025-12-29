@@ -96,6 +96,34 @@ export interface OnboardingInfo {
 }
 
 /**
+ * Web 搜索结果接口
+ * 单条 Web 搜索的结果
+ */
+export interface WebSearchResult {
+  /** 搜索结果的内容摘要 */
+  content: string;
+  /** 搜索结果的来源网站图标 URL */
+  icon: string;
+  /** 搜索结果的来源地址 */
+  link: string;
+  /** 搜索结果的来源网站名称 */
+  media: string;
+  /** 搜索结果的来源文章标题 */
+  title: string;
+}
+
+/**
+ * Web 搜索查询接口
+ * 调用 Web 搜索的详情
+ */
+export interface WebSearchQuery {
+  /** 搜索查询 */
+  input: string;
+  /** Web 搜索结果集合 */
+  results: WebSearchResult[];
+}
+
+/**
  * ChatKit 接口
  * 定义了 ChatKit 的一些抽象方法
  */
@@ -135,19 +163,17 @@ export interface ChatKitInterface {
   ): Promise<ChatMessage>;
 
   /**
-   * 解析 EventStreamMessage 并累积文本
-   * 当接收到 SSE 消息时触发，该方法需要由开发者实现
-   * 将不同的 API 接口返回的 SSE 进行解析成 ChatKit 组件能够处理的标准数据格式后返回
-   * 返回解析并积累起来后的 buffer，该 buffer 可以被直接打印到界面上
+   * 将 API 接口返回的 EventStream 增量解析成完整的 AssistantMessage 对象
+   * 当接收到 SSE 消息时触发，该方法需要由子类实现
    * 注意：该方法是一个无状态无副作用的函数，不允许修改 state
-   * @param eventMessage 接收到的一条 EventStreamMessage
-   * @param prevBuffer 之前已经堆积起来的文本
-   * @returns 返回解析并积累起来后的 buffer
+   * @param eventMessage 接收到的一条 Event Message
+   * @param prev 上一次增量更新后的 AssistantMessage 对象
+   * @returns 返回更新后的 AssistantMessage 对象
    */
-  reduceEventStreamMessage(
-    eventMessage: EventStreamMessage,
-    prevBuffer: string
-  ): string;
+  reduceAssistantMessage<T = any, K = any>(
+    eventMessage: T,
+    prev: K
+  ): K;
 
   /**
    * 检查是否需要刷新 token

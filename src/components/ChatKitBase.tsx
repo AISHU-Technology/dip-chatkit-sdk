@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { ChatMessage, RoleType, ApplicationContext, ChatKitInterface, EventStreamMessage, ChatMessageType, OnboardingInfo } from '../types';
+import { ChatMessage, RoleType, ApplicationContext, ChatKitInterface, EventStreamMessage, ChatMessageType, OnboardingInfo, WebSearchQuery } from '../types';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
 import Header from './Header';
@@ -195,15 +195,14 @@ export abstract class ChatKitBase<P extends ChatKitBaseProps = ChatKitBaseProps>
   public abstract sendMessage(text: string, ctx: ApplicationContext, conversationID?: string): Promise<ChatMessage>;
 
   /**
-   * 解析 EventStreamMessage 并累积文本 (抽象方法，由子类实现)
-   * 当接收到 SSE 消息时触发，该方法需要由开发者实现
-   * 将不同的 API 接口返回的 SSE 进行解析成 ChatKit 组件能够处理的标准数据格式后返回
-   * 返回解析并积累起来后的 buffer，该 buffer 可以被直接打印到界面上
-   * @param eventMessage 接收到的一条 EventStreamMessage
-   * @param prevBuffer 之前已经堆积起来的文本
-   * @returns 返回解析并积累起来后的 buffer
+   * 将 API 接口返回的 EventStream 增量解析成完整的 AssistantMessage 对象 (抽象方法，由子类实现)
+   * 当接收到 SSE 消息时触发，该方法需要由子类实现
+   * 注意：该方法是一个无状态无副作用的函数，不允许修改 state
+   * @param eventMessage 接收到的一条 Event Message
+   * @param prev 上一次增量更新后的 AssistantMessage 对象
+   * @returns 返回更新后的 AssistantMessage 对象
    */
-  public abstract reduceEventStreamMessage(eventMessage: EventStreamMessage, prevBuffer: string): string;
+  public abstract reduceAssistantMessage<T = any, K = any>(eventMessage: T, prev: K): K;
 
   /**
    * 检查是否需要刷新 token (抽象方法，由子类实现)
@@ -230,6 +229,29 @@ export abstract class ChatKitBase<P extends ChatKitBaseProps = ChatKitBaseProps>
   public removeApplicationContext = (): void => {
     this.setState({ applicationContext: this.props.defaultApplicationContext });
   };
+
+  /**
+   * 使用 Markdown 渲染 AI 助手返回的文本内容
+   * 该方法由子类调用
+   * @param text 要渲染到界面的文本，每次都传完整的文本
+   */
+  protected appendTextBlock(text: string): void {
+    // 此方法由子类在处理 EventStream 时调用
+    // 实际的渲染逻辑已经在 MessageList 组件中通过 ReactMarkdown 实现
+    // 子类应该调用此方法来更新消息内容，然后通过 setState 更新界面
+    console.log('appendTextBlock 被调用，文本长度:', text.length);
+  }
+
+  /**
+   * 渲染 AI 助手执行 Web 搜索的执行详情
+   * 该方法由子类调用
+   * @param query Web 搜索的执行详情
+   */
+  protected appendWebSearchBlock(query: WebSearchQuery): void {
+    // 此方法由子类在处理 EventStream 时调用
+    // 子类应该调用此方法来添加 Web 搜索结果到消息内容中
+    console.log('appendWebSearchBlock 被调用，搜索查询:', query.input, '结果数量:', query.results.length);
+  }
 
   /**
    * 创建新的会话
@@ -409,8 +431,8 @@ export abstract class ChatKitBase<P extends ChatKitBaseProps = ChatKitBaseProps>
 
               console.log('构造的 EventStreamMessage:', eventMessage);
 
-              // 调用子类的 reduceEventStreamMessage 方法解析事件
-              buffer = this.reduceEventStreamMessage(eventMessage, buffer);
+              // 调用子类的 reduceAssistantMessage 方法解析事件
+              buffer = this.reduceAssistantMessage(eventMessage, buffer);
               console.log('handleStreamResponse - buffer更新后:', buffer);
 
               // 更新界面上的消息内容

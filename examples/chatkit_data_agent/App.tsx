@@ -19,7 +19,7 @@ export const ChatKitDataAgentDemo: React.FC = () => {
     console.log('正在刷新 token...');
     // TODO: 在实际项目中，这里应该调用真实的 token 刷新接口
     // 这里仅作演示，返回原 token
-    return 'ory_at_SL8UpKSQ6hcQhVylz_Zl6TaUY4hLXJXkzWiKddCJ6rQ.UFX6wqEPTJHGDar_xo1HFKQiH6l-y3apGHbSP50Go0o'
+    return 'ory_at_rvXzOGqeQGwRl8P9LyeVSERxhzlAn0yHsqsM5_W-I2k.Gci5diOYIRDG_Lu83mxnIO4ViDBElH8KCVoAUZo4k8c'
   };
 
   /**
@@ -67,9 +67,12 @@ export const ChatKitDataAgentDemo: React.FC = () => {
         <div className="mt-8 p-4 bg-indigo-50 rounded-lg">
           <h2 className="text-lg font-semibold text-indigo-800 mb-2">功能说明</h2>
           <ul className="text-sm text-indigo-700 space-y-1">
-            <li>• key 为 ["message"] 时输出首词；后续从包含 ["message", "final_answer"] 的事件中取 content 增量</li>
-            <li>• action 为 end 时结束流式打印</li>
+            <li>• 基于白名单机制处理 EventStream,自动构建 AssistantMessage 对象</li>
+            <li>• 支持 upsert 和 append 操作,灵活处理增量数据更新</li>
+            <li>• 自动识别并渲染 Web 搜索结果(zhipu_search_tool)</li>
+            <li>• AI 响应自动以 Markdown 格式渲染,支持代码高亮</li>
             <li>• 支持对话上下文注入与移除</li>
+            <li>• 支持 Token 自动刷新和重试机制</li>
           </ul>
         </div>
 

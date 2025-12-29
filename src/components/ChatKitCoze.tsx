@@ -21,7 +21,7 @@ export interface ChatKitCozeProps extends ChatKitBaseProps {
 /**
  * ChatKitCoze 组件
  * 专门适配扣子(Coze) API 的智能体对话组件
- * 继承自 ChatKitBase,实现了 generateConversation、sendMessage 和 reduceEventStreamMessage 方法
+ * 继承自 ChatKitBase,实现了 generateConversation、sendMessage 和 reduceAssistantMessage 方法
  */
 export class ChatKitCoze extends ChatKitBase<ChatKitCozeProps> {
   /** 扣子 Bot ID */
@@ -229,16 +229,20 @@ export class ChatKitCoze extends ChatKitBase<ChatKitCozeProps> {
   }
 
   /**
-   * 解析扣子的 EventStreamMessage 并累积文本
-   * @param eventMessage 接收到的一条 EventStreamMessage
-   * @param prevBuffer 之前已经堆积起来的文本
-   * @returns 返回解析并积累起来后的 buffer
+   * 将 API 接口返回的 EventStream 增量解析成完整的 AssistantMessage 对象
+   * 对于 Coze，AssistantMessage 就是累积的文本字符串
+   * @param eventMessage 接收到的一条 Event Message
+   * @param prev 上一次增量更新后的文本 buffer
+   * @returns 返回更新后的文本 buffer
    */
-  public reduceEventStreamMessage(eventMessage: EventStreamMessage, prevBuffer: string): string {
+  public reduceAssistantMessage<T = any, K = any>(eventMessage: T, prev: K): K {
     try {
-      const data = JSON.parse(eventMessage.data);
-      console.log('reduceEventStreamMessage 调用:', {
-        event: eventMessage.event,
+      const em = eventMessage as EventStreamMessage;
+      const data = JSON.parse(em.data);
+      const prevBuffer = prev as string;
+
+      console.log('reduceAssistantMessage 调用:', {
+        event: em.event,
         prevBuffer,
         data,
       });
@@ -250,66 +254,66 @@ export class ChatKitCoze extends ChatKitBase<ChatKitCozeProps> {
 
       // 扣子v3 API的事件处理
       // 根据 event 字段判断事件类型
-      if (eventMessage.event === 'conversation.message.delta') {
+      if (em.event === 'conversation.message.delta') {
         // 增量内容
         if (data.content && data.type === 'answer') {
           const newBuffer = prevBuffer + data.content;
           console.log('增量内容:', data.content, '新buffer:', newBuffer);
-          return newBuffer;
+          return newBuffer as K;
         }
-      } else if (eventMessage.event === 'conversation.message.completed') {
+      } else if (em.event === 'conversation.message.completed') {
         // 消息完成,只处理 type 为 answer 的消息
         if (data.content && data.type === 'answer') {
           console.log('消息完成,完整内容:', data.content);
-          return data.content;
+          return data.content as K;
         }
         // 忽略 verbose 类型的消息
         if (data.type === 'verbose') {
           console.log('忽略 verbose 类型消息');
-          return prevBuffer;
+          return prevBuffer as K;
         }
-      } else if (eventMessage.event === 'conversation.chat.completed') {
+      } else if (em.event === 'conversation.chat.completed') {
         // Chat 完成事件
         console.log('Chat完成');
-        return prevBuffer;
-      } else if (eventMessage.event === 'conversation.chat.created') {
+        return prevBuffer as K;
+      } else if (em.event === 'conversation.chat.created') {
         // Chat 创建事件
         console.log('Chat创建');
-        return prevBuffer;
-      } else if (eventMessage.event === 'conversation.chat.in_progress') {
+        return prevBuffer as K;
+      } else if (em.event === 'conversation.chat.in_progress') {
         // Chat 进行中事件
         console.log('Chat进行中');
-        return prevBuffer;
-      } else if (eventMessage.event === 'conversation.message.started') {
+        return prevBuffer as K;
+      } else if (em.event === 'conversation.message.started') {
         // 消息开始事件
         console.log('消息开始');
-        return prevBuffer;
-      } else if (eventMessage.event === 'done') {
+        return prevBuffer as K;
+      } else if (em.event === 'done') {
         // DONE 事件
         console.log('收到done事件');
-        return prevBuffer;
+        return prevBuffer as K;
       }
 
       // 处理扣子的其他消息类型事件
       if (data.msg_type === 'generate_answer_finish') {
         // 答案生成完成事件，保持当前 buffer
         console.log('答案生成完成');
-        return prevBuffer;
+        return prevBuffer as K;
       }
 
       // 如果没有 event 字段,尝试从其他字段推断
       // 检查是否是 Chat 完成响应 (status: "completed")
       if (data.status === 'completed') {
         console.log('检测到Chat完成状态');
-        return prevBuffer;
+        return prevBuffer as K;
       }
 
       // 其他未知事件类型，保持当前buffer而不是返回原始数据
-      console.log('未知事件类型,保持原buffer:', eventMessage.event, data);
-      return prevBuffer;
+      console.log('未知事件类型,保持原buffer:', em.event, data);
+      return prevBuffer as K;
     } catch (e) {
       console.error('解析扣子事件失败:', e);
-      return prevBuffer;
+      return prev;
     }
   }
 
