@@ -2,14 +2,19 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { resolve } from 'path';
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
 /**
  * Vite 配置 - 用于构建 ChatKit 组件库
  *
  * 此配置用于将 ChatKit 组件库构建为可发布的 npm 包
+ * CSS 会自动内联到 JS 中，使用者无需单独引入 CSS 文件
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    cssInjectedByJsPlugin(),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -41,5 +46,8 @@ export default defineConfig({
     outDir: 'dist',
     // 清空输出目录
     emptyOutDir: true,
+    // CSS 配置：将 CSS 内联到 JS 中，这样使用者无需单独引入 CSS
+    cssCodeSplit: false,
+    cssMinify: true,
   },
 });

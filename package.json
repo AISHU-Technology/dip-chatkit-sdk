@@ -1,6 +1,6 @@
 {
-  "name": "chatkit",
-  "version": "0.1.0",
+  "name": "@dip/chatkit",
+  "version": "1.0.0",
   "type": "module",
   "description": "AI 对话组件 - ChatKit",
   "main": "dist/chatkit.cjs.js",
@@ -11,8 +11,7 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/chatkit.es.js",
       "require": "./dist/chatkit.cjs.js"
-    },
-    "./style.css": "./dist/chatkit.css"
+    }
   },
   "files": [
     "dist"
@@ -30,24 +29,29 @@
     "react",
     "component"
   ],
-  "author": "",
+  "author": "AISHU",
   "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
+    "@types/react": "^18.3.18 || ^19.0.0",
+    "@types/react-dom": "^18.3.5 || ^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vite-plugin-css-injected-by-js": "^3.5.2"
   }
 }
