@@ -17,9 +17,6 @@ const WebSearchBlockComponent: React.FC<WebSearchBlockComponentProps> = ({ block
   const [isExpanded, setIsExpanded] = useState(false);
   const { input, results } = block.content;
 
-  // 调试日志
-  console.log('WebSearchBlockComponent 收到的数据:', { input, resultsCount: results?.length });
-
   return (
     <div className="web-search-block border border-gray-200 rounded-lg p-4 my-2 bg-gray-50">
       {/* 搜索查询标题 */}

@@ -459,20 +459,11 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
           if (content?.stage === 'skill') {
             // 检查是否是 Web 搜索工具
             if (content.skill_info?.name === 'zhipu_search_tool') {
-              console.log('检测到 zhipu_search_tool');
-              console.log('完整的 content:', JSON.stringify(content, null, 2));
               // 构造 WebSearchQuery 并调用渲染方法
               const searchQuery = this.extractWebSearchQuery(content);
-              console.log('提取的 searchQuery:', searchQuery);
               if (searchQuery) {
-                console.log('调用 appendWebSearchBlock，messageId:', messageId);
                 this.appendWebSearchBlock(messageId, searchQuery);
-              } else {
-                console.log('searchQuery 为 null，未调用 appendWebSearchBlock');
               }
-            } else {
-              // 其他工具，输出工具名称
-              console.log('调用工具:', content.skill_info?.name);
             }
           } else if (content?.stage === 'llm') {
             // LLM 阶段，输出 answer
@@ -520,29 +511,24 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
       const toolCalls = progress?.answer?.choices?.[0]?.message?.tool_calls;
 
       if (!toolCalls || !Array.isArray(toolCalls) || toolCalls.length < 2) {
-        console.log('tool_calls 不存在或长度不足:', toolCalls);
         return null;
       }
 
       // tool_calls[0] 是 SearchIntent（输入）
       const searchIntentObj = toolCalls[0];
-      console.log('searchIntent 对象:', JSON.stringify(searchIntentObj, null, 2));
 
       // search_intent 是一个数组，取第一个元素
       const searchIntentArray = searchIntentObj?.search_intent;
       const searchIntent = Array.isArray(searchIntentArray) ? searchIntentArray[0] : searchIntentArray;
 
       const query = searchIntent?.query || searchIntent?.keywords || '';
-      console.log('提取的 query:', query);
 
       // tool_calls[1] 是 SearchResult（输出）
       const searchResultObj = toolCalls[1];
-      console.log('searchResult 对象:', JSON.stringify(searchResultObj, null, 2));
 
       const searchResultArray = searchResultObj?.search_result;
 
       if (!searchResultArray || !Array.isArray(searchResultArray)) {
-        console.log('search_result 不存在或不是数组:', searchResultArray);
         return null;
       }
 
@@ -553,8 +539,6 @@ export class ChatKitDataAgent extends ChatKitBase<ChatKitDataAgentProps> {
         media: item.media || '',
         title: item.title || '',
       }));
-
-      console.log('构造的 WebSearchQuery:', { input: query, resultsCount: results.length });
 
       return {
         input: query,
