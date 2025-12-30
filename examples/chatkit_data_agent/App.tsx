@@ -40,6 +40,34 @@ export const ChatKitDataAgentDemo: React.FC = () => {
     }
   };
 
+  /**
+   * 一键发送对话示例
+   * 直接发送带有上下文的消息
+   */
+  const sendExampleMessage = async () => {
+    if (!showChat) {
+      setShowChat(true);
+    }
+
+    setTimeout(async () => {
+      const context: ApplicationContext = {
+        title: '中心节点',
+        data: {
+          node_id: 'node-uuid-1',
+        },
+      };
+
+      try {
+        await chatKitRef.current?.send(
+          '节点故障,帮我分析可能的原因并给出解决方案',
+          context
+        );
+      } catch (error) {
+        console.error('发送消息失败:', error);
+      }
+    }, 100);
+  };
+
   return (
     <div className={`relative flex-1 flex flex-col items-center justify-center p-8 bg-gray-50 min-h-screen ${chatOffsetClass}`}>
       <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
@@ -53,7 +81,14 @@ export const ChatKitDataAgentDemo: React.FC = () => {
             onClick={injectExampleContext}
             className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
           >
-            添加上下文并打开聊天
+            【添加应用上下文】
+          </button>
+
+          <button
+            onClick={sendExampleMessage}
+            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            【一键发送对话】
           </button>
 
           <button
@@ -89,14 +124,31 @@ export const ChatKitDataAgentDemo: React.FC = () => {
 
         <div className="mt-6 p-4 bg-gray-100 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">示例上下文数据:</h3>
-          <pre className="text-xs text-gray-600 bg-white p-3 rounded overflow-x-auto">
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">【添加应用上下文】:</p>
+              <pre className="text-xs text-gray-600 bg-white p-3 rounded overflow-x-auto">
 {`{
   "title": "故障节点",
   "data": {
     "node_id": "node-uuid-1"
   }
 }`}
-          </pre>
+              </pre>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">【一键发送对话】:</p>
+              <pre className="text-xs text-gray-600 bg-white p-3 rounded overflow-x-auto">
+{`消息: "节点故障,帮我分析可能的原因并给出解决方案"
+上下文: {
+  "title": "中心节点",
+  "data": {
+    "node_id": "node-uuid-1"
+  }
+}`}
+              </pre>
+            </div>
+          </div>
         </div>
       </div>
 
